@@ -1,5 +1,9 @@
 import random
 from itertools import count
+import chess
+import chess.engine
+
+stockfish = chess.engine.SimpleEngine.popen_uci("YOUR_FOLDER_HERE/FischerAnarchyChess/stockfish/stockfish.exe")
 
 darkSquares = [
     22, 24, 26, 28,
@@ -12,25 +16,9 @@ darkSquares = [
     91, 93, 95, 97
 ]
 lightSquares = [x - 1 for x in darkSquares]
-exclusions = [x for x in range(20)] + \
-    [x for x in range(100,120)] + \
-    [x for x in range(20,91,10)] + \
-    [x for x in range(29,100,10)]
+exclusions = []
 
-board = list(
-    '         \n'  #   0 -  9
-    '         \n'  #  10 - 19
-    ' ........\n'  #  20 - 29
-    ' ........\n'  #  30 - 39
-    ' ........\n'  #  40 - 49
-    ' ........\n'  #  50 - 59
-    ' ........\n'  #  60 - 69
-    ' ........\n'  #  70 - 79
-    ' ........\n'  #  80 - 89
-    ' ........\n'  #  90 - 99
-    '         \n'  # 100 -109
-    '         \n'  # 110 -119
-)
+board = None
 whitePieces = "PPPPPPPPRNBQKBNR"
 blackPieces = "pppppppprnbqkbnr"
 
@@ -82,7 +70,32 @@ def printBoard(board):
         if blankSpaces != 0:
             fen += str(blankSpaces)
         fen += '/'
-    print(fen + " w - - 0 1")
+    fen = fen[:-1]
+    fen += " w - - 0 1"
+    print(fen)
+    return fen
+
+def getExclusions():
+    return [x for x in range(20)] + \
+    [x for x in range(100,120)] + \
+    [x for x in range(20,91,10)] + \
+    [x for x in range(29,100,10)]
+
+def getBoard():
+    return list(
+    '         \n'  #   0 -  9
+    '         \n'  #  10 - 19
+    ' ........\n'  #  20 - 29
+    ' ........\n'  #  30 - 39
+    ' ........\n'  #  40 - 49
+    ' ........\n'  #  50 - 59
+    ' ........\n'  #  60 - 69
+    ' ........\n'  #  70 - 79
+    ' ........\n'  #  80 - 89
+    ' ........\n'  #  90 - 99
+    '         \n'  # 100 -109
+    '         \n'  # 110 -119
+)
 
 def setPieces(board, pieces):
     bishopExclusions = None
@@ -122,9 +135,23 @@ def setKing(board, king, enemyDirections):
     board[kingPosition] = king
     exclusions.append(kingPosition)
 
-setPieces(board, whitePieces)
-setPieces(board, blackPieces)
-setKing(board, 'K', blackDirections)
-setKing(board, 'k', whiteDirections)
+def getEvaluation(fen):
+    engineBoard = chess.Board(fen)
+    info = stockfish.analyse(engineBoard, chess.engine.Limit(time=1))
+    score = info["score"].white()
+    if "#" in str(score):
+        print(score)
+    else:
+        print(float(str(score))/100)
+
+while True:
+    exclusions = getExclusions()
+    board = getBoard()
+    setPieces(board, whitePieces)
+    setPieces(board, blackPieces)
+    setKing(board, 'K', blackDirections)
+    setKing(board, 'k', whiteDirections)
+    fen = printBoard(board)
+    getEvaluation(fen)
+    input()
             
-printBoard(board)
